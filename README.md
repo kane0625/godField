@@ -5,8 +5,8 @@ HTML、CSS、JSを使用したリアルタイムな対戦を再現します。
 
 ## 🚀 セットアップ方法
 
-1. リポジトリをクローン
-   　　　git clone [リポジトリのURL]
+1. リポジトリをクローンする。以下のURLをVScodeのターミナルにペーストする
+   　　　git clone https://github.com/ok210195/godField.git
 
 2. VScode内のターミナルに以下のコマンドを入力する
    　　　npm install
