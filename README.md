@@ -7,9 +7,9 @@ HTML、CSS、JSを使用したリアルタイムな対戦を再現します。
 
 1. リポジトリをクローン
 
-   1,git clone [リポジトリのURL]
-   2,npm install
-   3,npm start
+   　　1,git clone [リポジトリのURL]
+   　　2,npm install
+   　　3,npm start
    
 
    📂 フォルダ構成
