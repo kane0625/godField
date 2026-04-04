@@ -14,9 +14,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 const DB_PATH  = path.join(__dirname, 'cards.db');
 const CSV_PATH = path.join(__dirname, 'cards.csv');
 
+// 起動時にDBを削除して毎回CSVから作り直す（古いスキーマの混入を防ぐ）
+if (fs.existsSync(DB_PATH)) {
+  fs.unlinkSync(DB_PATH);
+  console.log('古いDBを削除しました');
+}
+
 const db = new sqlite3.Database(DB_PATH, err => {
   if (err) { console.error('DB接続エラー:', err); process.exit(1); }
-  console.log('DB接続OK');
+  console.log('DB接続OK（新規作成）');
 });
 
 const TYPE_MAP = { '\u6b66\u5668':'weapon', '\u9632\u5177':'armor', '\u5947\u8de9':'miracle' };
@@ -38,8 +44,6 @@ db.serialize(() => {
     '  gift_rate INTEGER NOT NULL DEFAULT 1, price INTEGER NOT NULL DEFAULT 0)',
     err => { if (err) console.error('CREATE TABLE:', err); }
   );
-  db.run('ALTER TABLE cards ADD COLUMN icon TEXT NOT NULL DEFAULT ""', () => {});
-
   if (!fs.existsSync(CSV_PATH)) { console.error('cards.csv が見つかりません'); return; }
 
   const lines = fs.readFileSync(CSV_PATH, 'utf-8')
@@ -61,7 +65,10 @@ db.serialize(() => {
       const defense = Number((p[6]||'0').trim()) || 0;
       const price   = Number((p[9]||'0').trim()) || 0;
       const gifRate = Number((p[8]||'1').trim()) || 1;
-      stmt.run(Number(p[0].trim()), (p[1]||'').trim(), p[2].trim(),
+      // iconはファイル名のみ抽出（フルパスが入っていても basename だけ使う）
+      const iconRaw = (p[1]||'').trim();
+      const iconFile = iconRaw.replace(/\\/g, '/').split('/').pop();
+      stmt.run(Number(p[0].trim()), iconFile, p[2].trim(),
         TYPE_MAP[p[3].trim()]||'weapon', ATTR_MAP[p[4].trim()]||'none',
         power, isPlusAtk, defense, (p[7]||'').trim(), gifRate, price);
       count++;
@@ -84,6 +91,8 @@ db.serialize(() => {
           };
         });
         console.log('カード読込: ' + CARDS.length + '枚');
+        // 最初の3枚のiconを表示して確認
+        CARDS.slice(0,3).forEach(c => console.log('  例) ['+c.id+'] '+c.name+' icon:"'+c.icon+'"'));
       });
     });
   });
