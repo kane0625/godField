@@ -563,7 +563,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         } else if (currentPhase === 'adding') {
-            // +カードを追加
+            // +カードを追加 aaaaa
             if (!card.isPlusAtk || card.type!=='weapon') { flashWarn('+カードのみ追加できます'); return; }
             socket.emit('use-card',{uid:card.uid});
         }
