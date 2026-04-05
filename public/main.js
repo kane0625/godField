@@ -54,6 +54,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const atkConfirmBtn = document.getElementById('atk-confirm-btn');
     const atkCancelBtn  = document.getElementById('atk-cancel-btn');
 
+    // 守備バー
+    const defBar        = document.getElementById('def-bar');
+    const defCardsRow   = document.getElementById('def-cards-row');
+    const defBarPower   = document.getElementById('def-bar-power');
+    const defConfirmBtn = document.getElementById('def-confirm-btn');
+    const defCancelBtn  = document.getElementById('def-cancel-btn');
+
     // ── 状態 ─────────────────────────────────────────────────
     let userName     = '';
     let cpuNameG     = 'CPU';
@@ -61,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let myHand       = [];
     let currentPhase = 'select';
     let currentAtk   = null;  // { baseCard, plusCards[], totalPower }
+    let currentDef   = null;  // { cards[], totalDefense }
 
     const cpuNames   = ['修行僧','守護龍','一般兵','バハムート','名無しの神','モアイ','占い師'];
     const teamColors = ['green','red','yellow','purple'];
@@ -231,6 +239,63 @@ document.addEventListener('DOMContentLoaded', () => {
         if (atkCardsRow) atkCardsRow.innerHTML = '';
     }
 
+    // 守備バー表示・更新・非表示
+    function showDefBar(defCard, totalDefense) {
+        currentDef = { cards:[defCard], totalDefense };
+        defBarPower.textContent = totalDefense;
+        renderDefCards();
+        defBar.style.display = 'flex';
+    }
+    function updateDefBar(defCard, totalDefense) {
+        if (!currentDef) return;
+        currentDef.cards.push(defCard);
+        currentDef.totalDefense = totalDefense;
+        defBarPower.textContent = totalDefense;
+        renderDefCards();
+    }
+    function hideDefBar() {
+        defBar.style.display = 'none';
+        currentDef = null;
+        if (defCardsRow) defCardsRow.innerHTML = '';
+    }
+    function renderDefCards() {
+        if (!defCardsRow || !currentDef) return;
+        defCardsRow.innerHTML = '';
+        currentDef.cards.forEach((c, i) => {
+            if (i > 0) {
+                const plus = document.createElement('div');
+                plus.className = 'def-plus-sign';
+                plus.textContent = '＋';
+                defCardsRow.appendChild(plus);
+            }
+            const wrap = document.createElement('div');
+            wrap.className = 'def-card-thumb';
+            const img = document.createElement('img');
+            setImgWithFallback(img, c);
+            img.className = 'def-thumb-img';
+            const lbl = document.createElement('div');
+            lbl.className = 'def-thumb-lbl';
+            lbl.textContent = '守' + (c.defense > 0 ? c.defense : c.power);
+            wrap.appendChild(img);
+            wrap.appendChild(lbl);
+            defCardsRow.appendChild(wrap);
+        });
+    }
+
+    // 守備決定ボタン
+    defConfirmBtn.addEventListener('click', () => {
+        socket.emit('def-confirm');
+        hideDefBar();
+        currentPhase = 'cpu-thinking';
+        phaseLabel.textContent = '⏳ ダメージ計算中…';
+        renderHand();
+    });
+    // 守備やり直しボタン
+    defCancelBtn.addEventListener('click', () => {
+        socket.emit('def-cancel');
+        hideDefBar();
+    });
+
     atkConfirmBtn.addEventListener('click', () => {
         socket.emit('atk-confirm');
         hideAtkBar();
@@ -316,7 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
         receiveHand(player); updateStatus(player,cpu,gf); renderLog(log);
         renderHand(); showDamageFlash(damage,bonus);
         forgiveBtn.style.display='none'; dmgBadge.textContent='';
-        hideAtkBar();
+        hideAtkBar(); hideDefBar();
     });
 
     socket.on('miracle-used', ({ player, cpu, gf, log }) => {
@@ -329,7 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderLog(log); currentPhase='select';
         setAttackerTarget(pName.textContent,cName.textContent);
         showCardDisplay(null); phaseLabel.textContent='🃏 武器 or 奇跡カードを選ぼう';
-        forgiveBtn.style.display='none'; hideAtkBar(); renderHand();
+        forgiveBtn.style.display='none'; hideAtkBar(); hideDefBar(); renderHand();
     });
 
     socket.on('cpu-thinking', ({ player, log }) => {
@@ -346,8 +411,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
     socket.on('warn', msg => flashWarn(msg));
 
+    // 守備1枚目選択
+    socket.on('def-started', ({ defCard, totalDefense, player, log }) => {
+        receiveHand(player);
+        updateStatusPlayer(player);
+        renderLog(log);
+        currentPhase = 'defending';
+        phaseLabel.textContent = '🛡 守備カードを重ねるか「守備決定」を！';
+        showDefBar(defCard, totalDefense);
+        renderHand();
+    });
+    // 守備カード追加
+    socket.on('def-added', ({ defCard, totalDefense, player, log }) => {
+        receiveHand(player);
+        updateStatusPlayer(player);
+        renderLog(log);
+        updateDefBar(defCard, totalDefense);
+        renderHand();
+    });
+    // 守備やり直し（カードが手札に戻ってきた）
+    socket.on('def-cancelled', ({ player, log }) => {
+        receiveHand(player);
+        updateStatusPlayer(player);
+        renderLog(log);
+        hideDefBar();
+        currentPhase = 'player-defense';
+        phaseLabel.textContent = '🛡 守備カードを選ぶか「許す」';
+        renderHand();
+    });
+
     forgiveBtn.addEventListener('click', () => {
-        if(currentPhase!=='player-defense') return;
+        if(currentPhase!=='player-defense' && currentPhase!=='defending') return;
         socket.emit('forgive'); forgiveBtn.style.display='none';
         currentPhase='cpu-thinking'; phaseLabel.textContent='⏳ ダメージ計算中…'; renderHand();
     });
@@ -399,7 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
         handArea.innerHTML = '';
         hideCardDetail();
 
-        const isDefPhase = currentPhase === 'player-defense';
+        const isDefPhase = currentPhase === 'player-defense' || currentPhase === 'defending';
         const isAdding   = currentPhase === 'adding';
         const isBusy     = currentPhase === 'cpu-thinking' || currentPhase === 'cpu-turn' || currentPhase === 'over';
 
@@ -408,8 +502,8 @@ document.addEventListener('DOMContentLoaded', () => {
             let unplayable;
             if (isBusy) {
                 unplayable = true;
-            } else if (isDefPhase) {
-                // 守備フェーズ：防具 or 攻守両用カードのみ選べる
+            } else if (isDefPhase || currentPhase === 'defending') {
+                // 守備フェーズ・守備重ねフェーズ：防具 or 攻守両用カードのみ選べる
                 unplayable = !(card.type === 'armor' || isDualCard(card));
             } else if (isAdding) {
                 // +カード追加フェーズ：isPlusAtkのweaponのみ
@@ -451,9 +545,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function onCardClick(card) {
         hideCardDetail();
-        if (currentPhase === 'player-defense') {
+        if (currentPhase === 'player-defense' || currentPhase === 'defending') {
             if (card.type !== 'armor' && !isDualCard(card)) {
-                flashWarn('🛡 守備フェーズでは防具カードか攻守両用カードを選んでください'); return;
+                flashWarn('🛡 防具カードか攻守両用カードを選んでください'); return;
             }
             socket.emit('use-card',{uid:card.uid});
             forgiveBtn.style.display='none';
@@ -532,4 +626,4 @@ document.addEventListener('DOMContentLoaded', () => {
         el.className='warn-flash'; el.textContent=msg;
         document.body.appendChild(el); setTimeout(()=>el.remove(),2000);
     }
-});
+});s

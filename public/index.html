@@ -158,6 +158,19 @@
     <!-- フッター：手札 -->
     <footer class="battle-footer">
         <!-- +カード重ねバー（addingフェーズ中のみ表示） -->
+        <!-- 守備バー：重ねた守備カードを画像で表示 -->
+        <div id="def-bar" class="def-bar" style="display:none;">
+            <div class="def-cards-row" id="def-cards-row"></div>
+            <div class="def-bar-center">
+                <div class="def-total-label">合計守備力</div>
+                <div class="def-total-power" id="def-bar-power">0</div>
+            </div>
+            <div class="def-bar-btns">
+                <button id="def-confirm-btn" class="def-confirm-btn">守備決定</button>
+                <button id="def-cancel-btn"  class="def-cancel-btn">やり直し</button>
+            </div>
+        </div>
+
         <!-- 攻撃バー：重ねたカードを画像で表示 -->
         <div id="atk-bar" class="atk-bar" style="display:none;">
             <div class="atk-cards-row" id="atk-cards-row">

@@ -268,6 +268,51 @@ body {
 
 
 
+/* ══ 守備バー（守備カード重ね中に表示）══════════════════════════ */
+.def-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(90deg, rgba(13,71,161,0.55), rgba(66,165,245,0.25));
+    border: 2px solid #42a5f5;
+    border-radius: 12px;
+    padding: 6px 14px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 4px;
+    min-height: 72px;
+}
+.def-cards-row {
+    display: flex; align-items: center; gap: 4px; flex: 1; overflow-x: auto;
+}
+.def-plus-sign { color: #90caf9; font-size: 1.2rem; font-weight: bold; padding: 0 2px; flex-shrink: 0; }
+.def-card-thumb { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+.def-thumb-img {
+    width: 52px; height: 52px; object-fit: cover; border-radius: 5px;
+    border: 2px solid rgba(144,202,249,0.6); background: #1a1a2e;
+}
+.def-thumb-lbl { font-size: 0.78rem; font-weight: bold; color: #90caf9; margin-top: 2px; }
+.def-bar-center { text-align: center; flex-shrink: 0; }
+.def-total-label { font-size: 0.7rem; color: #90caf9; letter-spacing: 0.05em; }
+.def-total-power {
+    font-size: 2rem; font-weight: bold; color: #fff; line-height: 1.1;
+    text-shadow: 0 0 10px rgba(66,165,245,0.8);
+}
+.def-total-power::before { content: '守'; font-size: 1rem; color: #90caf9; vertical-align: middle; margin-right: 2px; }
+.def-bar-btns { display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
+.def-confirm-btn {
+    background: #1565c0; color: #fff; border: none; border-radius: 8px;
+    padding: 8px 14px; font-size: 1rem; font-weight: bold; cursor: pointer; font-family: inherit;
+    box-shadow: 0 3px #0d47a1; transition: transform .1s;
+}
+.def-confirm-btn:active { transform: translateY(2px); box-shadow: none; }
+.def-confirm-btn:hover  { background: #0d47a1; }
+.def-cancel-btn {
+    background: #455a64; color: #cfd8dc; border: none; border-radius: 8px;
+    padding: 5px 14px; font-size: 0.85rem; cursor: pointer; font-family: inherit;
+}
+.def-cancel-btn:hover { background: #37474f; }
+
 /* ══ 攻撃バー（+カード重ね中に表示）══════════════════════════════ */
 .atk-bar {
     display: flex;
